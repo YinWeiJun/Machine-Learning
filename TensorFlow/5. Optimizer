@@ -1,0 +1,14 @@
+加速神经网络训练 (Speed Up Training)
+===================================
+    包括以下几种模式:
+
+        Stochastic Gradient Descent (SGD)
+        Momentum
+        AdaGrad
+        RMSProp
+        Adam
+        
+Stochastic Gradient Descent (SGD) 
+=================================
+    最基础的方法就是 SGD 啦, 想像红色方块是我们要训练的 data, 如果用普通的训练方法, 就需要重复不断的把整套数据放入神经网络 NN训练, 
+    这样消耗的计算资源会很大.
