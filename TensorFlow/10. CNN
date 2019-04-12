@@ -1,0 +1,110 @@
+"""
+Please note, this code is only for python 3+. If you are using python 2+, please modify the code accordingly.
+"""
+from __future__ import print_function
+import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+# number 1 to 10 data
+# 手写数字数据集
+mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
+
+# 计算正确率
+def compute_accuracy(v_xs, v_ys):
+    global prediction
+    y_pre = sess.run(prediction, feed_dict={xs: v_xs, keep_prob: 1})
+    correct_prediction = tf.equal(tf.argmax(y_pre,1), tf.argmax(v_ys,1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    result = sess.run(accuracy, feed_dict={xs: v_xs, ys: v_ys, keep_prob: 1})
+    return result
+
+# 初始化卷积核 在之后的卷积 池化 全连接之后 得到记过与 真实值对比，
+# 根据误差再反过来更新卷积核，得到最后CNN模型的卷积核
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
+
+# 初始化偏量
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
+
+# 定义卷积参数，长宽步长都是1(strides = [1,1,1,1] 首尾都是1，中间两个决定长宽方向的步长)
+# padding定义卷积之后得到的shape是否和原始图像的shape相同，这里选择相同，则会在图像边缘添加0
+# 具体添加几圈0，更加卷积核的shape和strides共同决定
+def conv2d(x, W):
+    # stride [1, x_movement, y_movement, 1]
+    # Must have strides[0] = strides[3] = 1
+    return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+# 定义池化参数，ksize = [1,2,2,1], 首尾都是1，中间2,2代表，2*2的像素单元采用其中的最大值（max_pooling）
+# 表示为一个像素，进而达到快速减少细节信息，同时防止过拟合的目的。strdes同卷积，代表池化的过程怎么移动2*2视窗
+def max_pool_2x2(x):
+    # stride [1, x_movement, y_movement, 1]
+    return tf.nn.max_pool(x, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
+
+# define placeholder for inputs to network
+xs = tf.placeholder(tf.float32, [None, 784])/255.   # 28x28
+ys = tf.placeholder(tf.float32, [None, 10])
+# 定义drop_out参数
+keep_prob = tf.placeholder(tf.float32)
+x_image = tf.reshape(xs, [-1, 28, 28, 1])
+# print(x_image.shape)  # [n_samples, 28,28,1]
+
+# 第一层卷积层，卷积核5*5*1 共有32个，所以卷积之后得到32厚度的图像特征，由于采用SAME卷积，所以得到28*28*32的特征
+# 然后进行池化，2*2 max_pooling减少一半数据量，得到14*14*32的特征，作为下一层的输入
+## conv1 layer ##
+W_conv1 = weight_variable([5,5, 1,32]) # patch 5x5, in size 1, out size 32
+b_conv1 = bias_variable([32])
+h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1) # output size 28x28x32
+h_pool1 = max_pool_2x2(h_conv1)                                         # output size 14x14x32
+
+# 第二层卷积层， 卷积核5*5*32（长*宽*厚度） 共有64个，同理得到结果是14*14*64
+# 然后进行池化，同理得到7*7*64的输出
+## conv2 layer ##
+W_conv2 = weight_variable([5,5, 32, 64]) # patch 5x5, in size 32, out size 64
+b_conv2 = bias_variable([64])
+h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2) # output size 14x14x64
+h_pool2 = max_pool_2x2(h_conv2)                                         # output size 7x7x64
+
+# 定义全连接层， 第一次全连接采用[7*7*64, 1024]矩阵，[7*7*64] * [7*7*64, 1024] = [1024]
+# 同时这里为了避免过拟合，进行了dropout操作
+## fc1 layer ##
+W_fc1 = weight_variable([7*7*64, 1024])
+b_fc1 = bias_variable([1024])
+# [n_samples, 7, 7, 64] ->> [n_samples, 7*7*64]
+h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+
+# 定义第二个全连接层，采用[1024, 10]的矩阵乘法，得到[10]的列，与样本结果结果组织方式相同
+# 通过softmax得到只有一个位置是1，其他位置都是0的结果，即prediction
+## fc2 layer ##
+W_fc2 = weight_variable([1024, 10])
+b_fc2 = bias_variable([10])
+prediction = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
+
+# 根据prediction计算误差，采用Adam加速器进行误差最小化，然后不断更新卷积核，偏移量，全连接核等参数，得到cnn模型
+# the error between prediction and real data
+cross_entropy = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(prediction),
+                                              reduction_indices=[1]))       # loss
+train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+
+sess = tf.Session()
+# important step
+# tf.initialize_all_variables() no long valid from
+# 2017-03-02 if using tensorflow >= 0.12
+if int((tf.__version__).split('.')[1]) < 12 and int((tf.__version__).split('.')[0]) < 1:
+    init = tf.initialize_all_variables()
+else:
+    init = tf.global_variables_initializer()
+sess.run(init)
+
+# 进行1000次训练，每次选择100个样本进行训练
+for i in range(1000):
+    batch_xs, batch_ys = mnist.train.next_batch(100)
+    sess.run(train_step, feed_dict={xs: batch_xs, ys: batch_ys, keep_prob: 0.5})
+    if i % 50 == 0:
+        print(compute_accuracy(
+            mnist.test.images[:1000], mnist.test.labels[:1000]))
+            
+            
