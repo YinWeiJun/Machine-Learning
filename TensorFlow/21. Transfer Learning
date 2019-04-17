@@ -57,6 +57,52 @@
                     saver = tf.train.Saver()
                     saver.save(self.sess, path, write_meta_graph=False)
                     
+训练
+====
+    因为有了训练好了的 VGG16, 你就能将 VGG16 的 Conv 层想象成是一个 feature extractor, 提取或压缩图片中的特征. 和 Autoencoder 中的 
+    
+    encoder 类似. 用这些提取的特征来训练后面的 regressor. 具体代码在这, 下面是简写版.
+
+            def train():
+                xs, ys = ...
+
+                vgg = Vgg16(vgg16_npy_path='./for_transfer_learning/vgg16.npy')
+                print('Net built')
+                for i in range(100):
+                    b_idx = np.random.randint(0, len(xs), 6)
+                    train_loss = vgg.train(xs[b_idx], ys[b_idx])
+                    print(i, 'train loss: ', train_loss)
+
+            vgg.save('./for_transfer_learning/model/transfer_learn')
+            
+    这里我只 train 了 100次, 如果是重新开始 train 一个 CNN, 100次绝对少了. 而且我使用的是只有 CPU 的电脑, 不好意思, 我暂时没有合适的 
+    
+    GPU… 所以你暂时在 莫烦Python 中基本找不到关于图像处理的教程… 不过! 正因为 transfer learning 让我不用从头 train CNN, 所以我做了这
+    
+    个教程! 否则, 我想用我的 CPU, 估计得一周才能 train 出来这个 VGG 吧.
+    
+测试
+====
+    我们现在已经迁移好了, train 好了后面的 fc layers, 也保存了后面的 fc 参数. 接着我们提取原始的 VGG16 前半部分参数和 train 好的后半
+    
+    部分参数. 进行测试.
+
+            def eval():
+                vgg = Vgg16(vgg16_npy_path='./for_transfer_learning/vgg16.npy',
+                            restore_from='./for_transfer_learning/model/transfer_learn')
+                vgg.predict(
+                    ['./for_transfer_learning/data/kittycat/000129037.jpg',
+                    './for_transfer_learning/data/tiger/391412.jpg'])
+                    
+    可以想象, 要让 VGG 达到这个目的, VGG必须懂得区分哪些是猫, 哪些是老虎, 而这个认知, 在原始的 VGG conv 层中就已经学出来了. 所以如果我们
+    
+    拆了后面的层, 将后面的 classifier 变成 regressor, 花费相当少的时间就能训练好.
+
+    迁移学习的玩法除了这样, 还有很多种其他的玩法, 我在这个短视频中介绍了一些. 迁移学习还有一些细节的地方也可以在这里关注一下, 比如什么时候
+    
+    要稍微 train 一下前面的 conv layers, 什么时候要完全固定住前面的 conv layers.
+                
+                
 完整代码
 ========
             from urllib.request import urlretrieve
