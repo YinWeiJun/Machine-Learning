@@ -1,3 +1,9 @@
 1. 交叉熵：H（P,Q) = - 求和（P(x)log(Q(x))
    理解为描述同一变量x概率分布Q相对于P估计的准确程度，所以在使用交叉熵损失函数时，一般会设定P代表的是正确答案，而Q代表的是预测的结果值。
+   tensorflow中没有计算交叉熵的函数，但是可以通过已有函数组合
+   i. clip_by_value(t, clip_value_min, clip_value_max) 截取向量t，t中小于min的用min代替，大于max的用max代替，其他不变
+   ii. reduce_mean(input_tensor, axisk keep_dims, name, reduction_indices) 对向量中的元素求和，然后求平均值。/
+   交叉熵：
+      cross_entropy = -tf.reduce_mean( y_ * tf.log( tf.clip_by_value( y, 1e-10, 1.0 ) ) )
+      (PS: y_为真值， y为预测值 tensorflow中 * 表示矩阵对应位置元素相乘，matmul（）为矩阵乘法）
    
