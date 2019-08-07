@@ -29,3 +29,6 @@
    （batch）进行训练，这样收敛速度快，最终结果也能达到预期的结果。
    
 7. 自适应学习率算法：思路：如果损失与某一指定参数的偏导的符号相同，那么学习率应该增加；反之，如果不同，则应该减小。
+
+8. train.GradientDescentOptimizer是梯度下降优化器，需要全部样本进行训练，速度比较慢；train.AdagradOptimizer是
+   Adagrad自适应学习率优化器；train.RMSPropOptimizer自适应学习率优化器，实现RMSProp优化算法；....
