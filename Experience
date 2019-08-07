@@ -32,3 +32,5 @@
 
 8. train.GradientDescentOptimizer是梯度下降优化器，需要全部样本进行训练，速度比较慢；train.AdagradOptimizer是
    Adagrad自适应学习率优化器；train.RMSPropOptimizer自适应学习率优化器，实现RMSProp优化算法；....
+
+9. 
