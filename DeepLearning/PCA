@@ -23,7 +23,7 @@
     所以，只要编码与解码的矩阵D为正交矩阵（DTD = I），即可。
     
 问题二：如果选择D
-    
+    迹运算： Tr(A)返回的是矩阵对角元素的和 Fobenius范数为 sqrt(Tr(AAT))
     f(x) = DTx
     g(x) = Dx
     r(x) = g(f(x)) = DDTx
