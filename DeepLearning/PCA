@@ -1,0 +1,40 @@
+主成分分析是一个简单的机器学习算法，可以通过基础的线性代数知识推导
+
+假设R(n)空间有m个点{x1, x2, x3, ... , xm}，我们希望对这些点进行有损压缩，当然我们希望损失精度尽可能少。
+
+我们用低维的方式表示每个点，就可以实现数据的压缩。如用R(l)(l<n)的空间进行表示m个点{c1, c2, c3, ... , cm}。
+进行表达的过程，我们称为编码，f(x) = c。同时，我们需要找到一个解码函数，使得 x ~ g(f(x))。
+
+问题一：如何编码，即寻找f(x)
+
+    编码过程中我们希望损失尽可能低，所以 c* = arg(c) min ||x - g(c)||2  范式
+    
+    即： （x - g(c))T (x - g(c))
+        = xTx - xTg(c) - g(c)Tx + g(c)Tg(c)
+        = xTx - 2xTg(c) + g(c)Tg(c)
+    显然 xTx 与 c 无关：
+        c* = arg(c) min (-2xTg(c) + g(c)Tg(c))
+    g(c)为解码函数 g(c) = Dc
+        c* = arg(c) min (-2xTDc + cTDTDc)
+           = arg(c) min (-2xTDc + cTc)
+    找最小值，所以对c进行求导等于0，得到：
+        -2DTx + 2c = 0
+        c = DTx
+    所以，只要编码与解码的矩阵D为正交矩阵（DTD = I），即可。
+    
+问题二：如果选择D
+    
+    f(x) = DTx
+    g(x) = Dx
+    r(x) = g(f(x)) = DDTx
+    因为用相同的D对所有点进行压缩，降维，所以不能只考了一个点，需要对每个点进行误差评估，所以需要Frobenius范数最小。
+        D* = arg(D) min sqrt(sum(x(i)j - r(xi)j) ^ 2))  DTD = Ij
+    首先考虑l=1 （R(1))的情况，这种情况 D为单一的向量d。
+        d* = arg(d) min sqrt(sum(x(i)- r(xi)Tdd) ^ 2))  dTd = 1
+    同样，展开求导可以得到（同时采用Frobenius范数 Tr(x)）：
+        d* = arg(d) min (-2Tr(xTxddT) + Tr(ddTxTxddT)
+           = arg(d) min (-2Tr(xTxddT) + Tr(xTxddTddT)
+           = arg(d) min (-2Tr(xTxddT + Tr(xTxddT)
+           = arg(d) min (-Tr(xTxddT)
+           = arg(d) max (Tr(xTxddT)
+    所以，最优的d是xTx最大特征值对应的特征向量，当然这只是l=1的情况，即只是第一个主成分。
